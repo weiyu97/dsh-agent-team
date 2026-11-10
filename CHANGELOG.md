@@ -30,3 +30,7 @@
 ## [examples] SCNet 客户端 CDP 驱动（2026-11-11）
 - 新增 `examples/scnet-client-cdp/`：用 CDP 驱动 Windows 上的 Electron 客户端（SCNet 计算服务），实现“发一句、它回一句”，全程用客户端自己的模型额度。
 - 关键：`--remote-debugging-port=9223` + SSH 隧道 + `.ProseMirror` 输入 / `.chat-message--response` 读回复。
+
+## [examples] SCNet 客户端 CDP · 修复“双击没反应”（2026-11-11）
+- 新增 `examples/scnet-client-cdp/launch.ps1`：启动前清理占单实例锁的旧实例，带 `--remote-debugging-port` 启动，可一键建桌面快捷方式，并自检端口。
+- README 增加 FAQ：双击没反应/端口没监听/发出去不回 的成因与解法。

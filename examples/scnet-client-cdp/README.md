@@ -17,10 +17,10 @@
 4. 客户端已登录（它用自己的账号额度）。
 
 ## 步骤
-```bash
-# 1) 目标机带调试口启动客户端（PowerShell）
-#    Start-Process -FilePath 'D:\AppData\scnet-client\计算服务.exe' -ArgumentList '--remote-debugging-port=9223','--remote-allow-origins=*'
-# 2) 起隧道
+```powershell
+# 1) 目标机：用 launch.ps1 带调试口启动（会先清单实例锁，避免“双击没反应”）
+#    powershell -ExecutionPolicy Bypass -File launch.ps1 -CreateShortcut
+# 2) 本机起隧道
 ./tunnel.sh start                       # = ssh -N -L 9223:127.0.0.1:9223 <user>@<win-host>
 curl -s http://127.0.0.1:9223/json/version   # 应返回 Chrome/...  Calculator
 # 3) 单发单收
@@ -71,3 +71,17 @@ SCNET_BOARD_SCP='user@board:/path/to/产出/' node bridge.mjs
 
 ## 安全
 调试端口=完全控制，务必内网、必要时加防火墙/隧道鉴权；不要把 token/密码写进任何文件或板子。
+
+## 常见问题（FAQ）
+
+### 双击客户端没反应 / 没窗口
+- **原因**：后台已有一个实例（比如 agent 在 session 0 拉起的）占着 Electron 单实例锁；双击 = 开第二个，它把参数转交旧实例后自己退出 → 看不到窗口。
+- **解法**：`taskkill /f /im 计算服务.exe` 杀干净，再用 `launch.ps1` 或**带调试参数的桌面快捷方式**启动（窗口可见 + 调试口可用）。
+- **一劳永逸**：`powershell -ExecutionPolicy Bypass -File launch.ps1 -CreateShortcut`，会在桌面放一个「SCNet (可被澪控制).lnk」。
+
+### 端口没监听
+- 客户端版本可能忽略 chromium 参数；先看任务管理器里有没有带 `--remote-debugging-port` 的进程，再看 `netstat -ano | findstr 9223`。换版本要复验。
+
+### 发出去它不回
+- 多半是公告弹窗挡住了输入：先点「不再提示」；或模型慢，加大 timeout。
+
