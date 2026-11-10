@@ -34,3 +34,8 @@
 ## [examples] SCNet 客户端 CDP · 修复“双击没反应”（2026-11-11）
 - 新增 `examples/scnet-client-cdp/launch.ps1`：启动前清理占单实例锁的旧实例，带 `--remote-debugging-port` 启动，可一键建桌面快捷方式，并自检端口。
 - README 增加 FAQ：双击没反应/端口没监听/发出去不回 的成因与解法。
+
+## [examples] scnet-client-cdp v3（2026-11-11 02:20）
+- 桥 v3：队列 claim（claim_id/claimed_at）+ 孤儿回收；每条任务新建独立会话；完成判定改四条件组合；fire-all-then-collect 并发；retry/blocked + 落板；FILES 回传；回执落 outbox + 板。
+- 新增 `PROTOCOL.md`（方案与状态机）、`CHECK.md`（10 条逐项对照与证据）。
+- README 增补「环境与平台差异」（Linux 控制端 / Windows 被控端、正反斜杠、GBK/UTF-8、三层引号 -EncodedCommand）与「给部署 agent 的硬要求」（出错自己复现、自己修、自证、不许假绿）。

@@ -6,9 +6,40 @@
 > 这不是通用库，是“经过实测的一条路”。照抄前先看 **前置条件** 和 **已知限制**，否则很容易在第一步就卡住。
 
 ## 实测环境
-- 客户端：SCNet 计算服务 v4.1.1（Electron 44.7.0 / Chrome 152），Windows Server
-- 本机：Linux（node ≥ 18，sshpass）
-- 2026-11-11 实测：单发单收、批量收件、推共享信箱、systemd 常驻 全通。
+- **控制端**：Linux（dfy 主机，node ≥ 18，sshpass，systemd）——**这套逻辑跑在 Linux 上**
+- **被控端**：Windows Server，SCNet 计算服务 v4.1.1（Electron 44.7.0 / Chrome 152）
+- 2026-11-11 实测通过：单发单收、每条任务独立会话、完成判定、批量并发（3 条）、孤儿回收、FILES 回传、回执落板。
+- 未实跑：retry/blocked 分支仍未遇到真实超时，代码就绪但不算验证过。
+
+## 环境与平台差异（照抄前必读）
+
+这套是 **Linux 控制端 + Windows 被控端** 的异构链路，90% 的坑不在逻辑，在两边方言不一样：
+
+| 差异 | 控制端（Linux/dfy） | 被控端（Windows） | 怎么办 |
+|---|---|---|---|
+| 路径分隔符 | `/` | `\`（反斜杠） | 传进 scp 前统一转 `/`；node 里用 `p.replace(/\\/g,'/')` |
+| 路径转义 | `"D:\dir"` | `D:\dir` / `"D:\dir"` | bash→ssh→cmd/powershell 三层，能用 `-EncodedCommand` 就别拼引号 |
+| 编码 | UTF-8 | cmd 默认 GBK | ssh 输出 `\| iconv -f GBK -t UTF-8`；脚本文件用 UTF-8 但别直接喂 cmd |
+| 换行 | `\n` | `\r\n` | 写 .cmd/.ps1 用 CRLF 或走 `-EncodedCommand`（UTF-16LE base64） |
+| 引号 | 单引号安全 | cmd 不认单引号 | 路径里带空格/中文时，用 PowerShell `-LiteralPath`，别用 cmd `copy` |
+| 环境变量 | `export` | `set` / `$env:` | WMI 起进程不继承当前 shell 的 env，要机器级或 cmd 包一层 |
+
+### 三条硬规则（都踩过）
+
+1. **反斜杠只在 Windows 侧用**：传给 scp/ssh 之前一律转成 `/`，否则 `sshpass scp "host:D:\a\b"` 会解析错。
+2. **bash→ssh→PowerShell 三层引号必炸**：要跑复杂命令，走 `powershell -NoProfile -EncodedCommand <base64(UTF-16LE)>`，别拼 `\\\"`。
+3. **GBK 不是 UTF-8**：`dir`/`tasklist` 输出里中文全是乱码时，管道接 `iconv -f GBK -t UTF-8`；反过来写 Windows 文件要注意编码。
+
+## 给部署 agent 的硬要求（出错自己跑一遍，自己修）
+
+你不是来“看完文档就交差”的，是来把这套跑通的。遵守：
+
+1. **任何报错，先自己复现一遍**：把原命令原样跑一遍、拿到完整报错（别截断），再动手。
+2. **不许猜**：路径、端口、进程名、编码，都先用命令验证（`netstat`/`tasklist`/`Test-Path`），别假设。
+3. **修完必须自证**：改完立刻跑验收命令，贴出真实输出（时间戳、状态、文件大小），不许写“应该可以了”。
+4. **失败要说卡在哪一跳**：是客户端没起、端口没听、隧道的、还是会话没建、回复没判定完成——写到能让人复现的程度。
+5. **不许把未验证写成已验证**：没跑成功就写“未跑通 + 卡点 + 下一步”，这比假绿强一百倍。
+6. **能在本机验的当场验**：`curl /json/version`、`node ask.mjs "回一个字：好"`、`netstat | findstr 9223`，跑一条贴一条。
 
 ## 前置条件（缺一不可）
 1. Windows 上客户端能启动，且**带调试端口**：`"D:\...\计算服务.exe" --remote-debugging-port=9223 --remote-allow-origins=*`
