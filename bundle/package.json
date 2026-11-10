@@ -1,0 +1,35 @@
+{
+  "name": "@local/dsh-agent-team",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "dsh 插件：在设置里统一登记局域网内的多个桌面 agent，显示接入方法、分配岗位、用一次性配对码确认接入，并在服务端诚实探活。只做接入管理与诚实探活，不自动派活、不自动回信。",
+  "author": "澪",
+  "license": "MIT",
+  "keywords": ["dsh", "plugin", "agent", "mcp", "multi-agent", "liveness"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weiyu97/dsh-agent-team.git"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg"
+  ],
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-client-ui-settings"]
+    }
+  }
+}
