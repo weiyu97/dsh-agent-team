@@ -3,6 +3,8 @@
 把一台 Windows 上的 **Electron 客户端**（本例：SCNet「计算服务.exe」v4.1.1）当成一个能对话、能回话的“同事”：
 本机通过 SSH 隧道连到它的 Chromium 调试端口，用 CDP 往输入框打字、回车、读回复。全程用它**自己的模型额度**（SCNet-Max），不偷登录态、不碰 APIKey。
 
+> **能不能开箱即用？不能。** 这是「一条被验证过的路」，不是安装包。别人要用，必须：① 那台 Windows 上有同一个/同版客户端并登录；② 改 `config.example.env` 里的主机、凭据、路径；③ 按验收表自测。代码逻辑可复用，环境不可复制。
+
 > 这不是通用库，是“经过实测的一条路”。照抄前先看 **前置条件** 和 **已知限制**，否则很容易在第一步就卡住。
 
 ## 实测环境
@@ -47,6 +49,22 @@
 3. 本机装了 `node`（≥18，用内置 fetch/WebSocket）和 `sshpass`（若非免密）。
 4. 客户端已登录（它用自己的账号额度）。
 
+## 部署前必改（照这个清单改，别硬编码）
+
+复制 `config.example.env` → 自己填，然后 `set -a; . ./config.env; set +a` 再跑脚本。要改的就这几项：
+
+| 变量 | 你现在是什么 | 必须改成 |
+|---|---|---|
+| `SCNET_SSH` | `administrator@192.168.198.237` | 你那台 Windows 的 `user@host` |
+| `SCNET_SSH_PASS_FILE` | `/home/dfy/.dsh/creds/itx.pass` | 你那把密钥/密码文件 |
+| `SCNET_CLIENT_EXE` | `D:\AppData\scnet-client\计算服务.exe` | 你的客户端路径 |
+| `SCNET_CLIENT_PROC` | `计算服务.exe` | 你的进程名（taskkill 用） |
+| `SCNET_MCP` | `http://192.168.198.237:18889/mcp` | 你的 MCP 队列端点（没有就留空，走文件桥） |
+| `SCNET_BOARD_SCP` / `..._PASS_FILE` | 共享板地址 | 你的信箱地址；不用就留空 |
+| `SCNET_CDP_PORT` | `9223` | 你选的调试端口（与启动参数一致） |
+
+不改就默认走我这套内网地址——**在你的环境里必然报错**。
+
 ## 步骤
 ```powershell
 # 1) 目标机：用 launch.ps1 带调试口启动（会先清单实例锁，避免“双击没反应”）
@@ -70,10 +88,14 @@ SCNET_BOARD_SCP='user@board:/path/to/产出/' node bridge.mjs
 | 能对话 | `node ask.mjs "回一个字：好" 120` | 输出 `好` |
 
 ## 目录
-- `ask.mjs` — 单发单收
-- `bridge.mjs` — 常驻收件箱：`inbox/xxx.txt` → 发 → `outbox/xxx.reply.md` → 移 `done/`；可推共享信箱
+- `ask.mjs` — 单发单收（默认每次新建会话）
+- `bridge.mjs` — 桥 v3：MCP 队列 claim/孤儿回收、每条任务新会话、完成判定、并发发射、retry/blocked、FILES 回传、回执
 - `tunnel.sh` — 隧道起/停/查
 - `run.sh` + `scnet-client-bridge.service.example` — systemd 常驻模板
+- `config.example.env` — **部署前先改这个**
+- `PROTOCOL.md` — 方案与状态机（先读）
+- `CHECK.md` — 10 条逐项对照与实测证据（看哪些真跑通）
+- `launch.ps1` — Windows 侧带调试口启动 + 建快捷方式
 
 ## 关键 DOM（4.1.1，换版本要复验）
 - 输入框：`div.ProseMirror[contenteditable=true]`（tiptap）
