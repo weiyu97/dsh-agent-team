@@ -53,7 +53,7 @@ SCNET_BOARD_SCP='user@board:/path/to/产出/' node bridge.mjs
 ## 已知限制 / 坑（务必看）
 1. **调试端口只 bind 127.0.0.1**，必须隧道。等于完全控制该客户端，**别在不可信网络/公网暴露**。
 2. **Electron 正式包可能忽略 chromium 参数**。本例 4.1.1 实测认 `--remote-debugging-port`；换版本先验 9223 是否 LISTENING，再看 `/json/version`。
-3. **单实例**：已有实例在跑时，新启动会把参数转交旧实例，调试口可能没绑。先 `taskkill` 再带参启动。
+3. **单实例（最容易被骂的一条）**：已有实例在跑时，新启动会把参数转交旧实例、自己退出——所以**用户双击没反应/没窗口**，十有八九是后台已有一个 agent 拉起的实例占着单实例锁。解法：先 `taskkill /im 计算服务.exe`，再用**带调试参数的桌面快捷方式**启动（窗口可见 + 调试口可用，两全）。做一个快捷方式：Target=`...\计算服务.exe`，参数=`--remote-debugging-port=9223 --remote-allow-origins=*`。
 4. 进程落在 **session 0 也能跑**，不必交互桌面；但客户端本身要能初始化（日志里出现 `runtime ready ... modelId=SCNet-Max` 最稳）。
 5. 回复是**流式异步**：要等最后一条 `chat-message--response` 文本稳定再取；超时给足（本仓库默认 120–180s）。
 6. **依赖客户端自己的登录态与额度**，别往里塞敏感内容；额度/账号由客户端自己管。
