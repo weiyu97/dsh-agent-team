@@ -1,0 +1,18 @@
+[Unit]
+Description=SCNet Client CDP bridge (dfy:9223 -> ITX 计算服务.exe)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dfy
+WorkingDirectory=/home/dfy/.dsh/scnet-client-bridge
+Environment=SCNET_BOARD_SCP=root@192.168.192.146:/mnt/usb2_3-1/agent沟通/产出/
+ExecStart=/bin/bash /home/dfy/.dsh/scnet-client-bridge/run.sh
+Restart=always
+RestartSec=15
+StandardOutput=append:/home/dfy/.dsh/scnet-client-bridge/bridge.log
+StandardError=append:/home/dfy/.dsh/scnet-client-bridge/bridge.log
+
+[Install]
+WantedBy=multi-user.target
