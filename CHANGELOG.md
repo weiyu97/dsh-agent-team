@@ -26,3 +26,7 @@
 - 跨站浏览器实测未做。
 - 探活是乐观下限，判据依赖对端如实填 `doing.started_at`。
 - 远程信箱需 `sshpass` + 密码路径；SSH 首次连接不校验主机指纹。
+
+## [examples] SCNet 客户端 CDP 驱动（2026-11-11）
+- 新增 `examples/scnet-client-cdp/`：用 CDP 驱动 Windows 上的 Electron 客户端（SCNet 计算服务），实现“发一句、它回一句”，全程用客户端自己的模型额度。
+- 关键：`--remote-debugging-port=9223` + SSH 隧道 + `.ProseMirror` 输入 / `.chat-message--response` 读回复。
